@@ -1,6 +1,9 @@
-const fs = require('fs')
-const users = JSON.parse(fs.readFileSync(`${__dirname}/users.js`,'utf-8'));
-exports.getAllUsers = (req,res)=>{
+// const fs = require('fs')
+// const users = JSON.parse(fs.readFileSync(`${__dirname}/users.js`,'utf-8'));
+const User = require('../models/userModel')
+exports.getAllUsers = async (req,res)=>{
+   try{
+    const users = await User.find();
     res.status(200).json({
         status: 'success',
         count: users.length,
@@ -8,43 +11,78 @@ exports.getAllUsers = (req,res)=>{
             users
         }
     })
+   }catch(err){
+        res.status(400).json({
+            status:'failed',
+            message:{
+                err
+            }
+        })
+   }
 }
-exports.getUser = (req,res)=>{
-const {id} = req.params
-const user =  users.find(user => user.id.toString() === id)
-if(user){
+exports.getUser = async (req,res)=>{
+try{
+    const user = await User.findById(req.params.id)
   res.status(200).json({
       status: 'success',
       data:{
           user
       }
   })
-}else{
-  res.status(400).json({
-      status: 'fail',
-      message: 'no user found'
-  })
+}catch(err){
+    res.status(400).json({
+        status: 'fail',
+        message: {
+            report: 'no user found',
+            err
+        }
+    })
+  }
 }
-}
-exports.createUser = (req,res)=>{
-const user = req.body
-console.log(req.body)
-users.push(user)
-res.status(200).json({
+
+exports.createUser = async (req,res)=>{
+try{
+    const user = await  User.create(req.body)
+    console.log(user)
+    res.status(200).json({
     status:'success',
     message: `${user.name} added to database`,
     data:{
         user
     }
 })
+}catch(err){
+    res.status(400).json({
+        status: 'failed',
+        message:{
+            err
+        }
+    })
 }
-exports.updateUser = (req,res)=>{
-res.send(200).json({
-    message: 'updated data goes here'
-})
+}
+exports.updateUser = async (req,res)=>{
+    try{
+        const user = await User.findByIdAndUpdate(req.params.id,req.body,{
+            new: true,
+            runValidators: true,
+            useFindAndModify: false
+          })
+        res.status(200).json({
+            status: 'success',
+            data:{
+                user
+            }
+        })
+    }catch(err){
+        res.status(404).json({
+            status: 'failed',
+            message: 'unable to update'
+        })
+    }
 
 }
-exports.deleteUser = (req,res)=>{
+exports.deleteUser = async (req,res)=>{
+    await User.findByIdAndDelete(req.params.id)
 res.status(204).json({
     message: 'content successfully deleted'
 })
